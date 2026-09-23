@@ -83,17 +83,25 @@ public class AccountsServiceImpl  implements IAccountsService {
     @Override
     public boolean updateAccount(CustomerDto customerDto) {
         boolean isUpdated = false;
-        AccountsDto accountsDto = customerDto.getAccountsDto();
-        if(accountsDto !=null ){
-            Account accounts = accountsRepository.findByAccountNumber(accountsDto.getAccountNumber());
-            AccountsMapper.mapToAccount(accountsDto, accounts);
-            accounts = accountsRepository.save(accounts);
+        AccountsDto accountDto = customerDto.getAccountsDto();
+        if(accountDto !=null ){
+            Account account = accountsRepository.findByAccountNumber(accountDto.getAccountNumber());
+            if(account !=null) {
+                account.setAccountNumber(accountDto.getAccountNumber());
+                account.setAccountType(accountDto.getAccountType());
+                account.setBranchAddress(accountDto.getBranchAddress());
+                account = accountsRepository.save(account);
 
-            Long customerId = accounts.getCustomerId();
-            Customer customer = customerRepository.findByCustomerId(customerId);
-            CustomerMapper.mapToCustomer(customerDto,customer);
-            customerRepository.save(customer);
-            isUpdated = true;
+                Long customerId = account.getCustomerId();
+                Customer customer = customerRepository.findByCustomerId(customerId);
+                if(customer != null) {
+                    customer.setName(customerDto.getName());
+                    customer.setEmail(customerDto.getEmail());
+                    customer.setMobileNumber(customerDto.getMobileNumber());
+                    customerRepository.save(customer);
+                }
+                isUpdated = true;
+            }
         }
         return  isUpdated;
     }
@@ -105,10 +113,15 @@ public class AccountsServiceImpl  implements IAccountsService {
     @Override
     public boolean deleteAccount(String mobileNumber) {
         Customer customer = customerRepository.findByMobileNumber(mobileNumber);
-        if(customer != null){
-            accountsRepository.deleteByCustomerId(customer.getCustomerId());
-            customerRepository.deleteById(customer.getCustomerId());
+        if(customer !=null){
+            Account account = accountsRepository.findByCustomerId(customer.getCustomerId());
+            //Optional
+        //  accountsRepository.deleteByCustomerId(customer.getCustomerId());
+        //  customerRepository.deleteById(customer.getCustomerId());
+            customerRepository.delete(customer);
+            accountsRepository.delete(account);
             return true;
+
         }
         return false;
     }
