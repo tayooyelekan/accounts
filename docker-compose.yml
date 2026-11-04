@@ -1,0 +1,8 @@
+services:
+  accounts:
+    image: tayo9/account:s1
+    container_name: accounts-ms
+    ports:
+      - "8080:8080"
+
+
