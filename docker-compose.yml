@@ -1,8 +1,34 @@
+#services:
+#  accounts:
+#    image: tayo9/account:s2
+#    container_name: accounts-ms
+#    ports:
+#      - "8080:8080"
 services:
-  accounts:
-    image: tayo9/account:s1
-    container_name: accounts-ms
+  account-db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: accountdb
+      MYSQL_USER: account
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  account-service:
+    image: tayo9/account:s2
     ports:
       - "8080:8080"
-
-
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://account-db:3306/accountdb
+      SPRING_DATASOURCE_USERNAME: account
+      SPRING_DATASOURCE_PASSWORD: secret
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+    depends_on:
+      account-db:
+        condition: service_healthy

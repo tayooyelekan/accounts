@@ -1,0 +1,56 @@
+services:
+  # ==========================================
+  # Database Service: MySQL 8.x
+  # ==========================================
+  account-db:
+    # Pulls the official MySQL version 8 image from Docker Hub
+    image: mysql:8
+
+    # Initialization variables evaluated only on the very first container creation
+    environment:
+      MYSQL_DATABASE: accountdb       # Pre-creates the database named 'accountdb'
+      MYSQL_USER: account             # Creates a custom non-root application user
+      MYSQL_PASSWORD: secret          # Password for the custom application user
+      MYSQL_ROOT_PASSWORD: root       # Root administrative password for the MySQL server
+
+    # Health check to ensure MySQL is fully initialized and accepting connections.
+    # Without this, dependent services may crash during MySQL's 15-30s initial bootstrap.
+    healthcheck:
+      # Pings MySQL internally using root credentials to check readiness
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot" ]
+      interval: 5s       # Time between running individual health check attempts
+      timeout: 5s        # Maximum time to wait for a ping response before marking it failed
+      retries: 10        # Consecutive failures allowed before flagging container as 'unhealthy'
+      start_period: 20s   # Initial grace period giving MySQL time to initialize internal tables
+
+  # ==========================================
+  # Application Service: Spring Boot Microservice
+  # ==========================================
+  account-service:
+    # Docker image containing the Spring Boot JAR application
+    image: tayo9/account:s2
+
+    # Port forwarding syntax: "<Host_Port>:<Container_Port>"
+    # Maps port 8080 on your host machine to port 8080 inside the container (e.g., http://localhost:8080)
+    ports:
+      - "8080:8080"
+
+    # Environment variables that map to Spring Boot's application.properties / application.yml
+    environment:
+      # JDBC URL: Docker's embedded DNS resolves the service name 'account-db' to its container IP.
+      # Port 3306 is the default internal MySQL port within the Docker network.
+      SPRING_DATASOURCE_URL: jdbc:mysql://account-db:3306/accountdb
+      SPRING_DATASOURCE_USERNAME: account
+      SPRING_DATASOURCE_PASSWORD: secret
+
+      # Automatically validates and modifies database schema tables to match JPA entities
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      # Explicitly declares the Hibernate dialect so the app doesn't rely solely on JDBC metadata
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+
+    # Startup orchestration
+    depends_on:
+      account-db:
+        # Ensures account-service does not start until account-db passes its healthcheck
+        condition: service_healthy
