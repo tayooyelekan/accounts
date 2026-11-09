@@ -32,3 +32,5 @@ services:
     depends_on:
       account-db:
         condition: service_healthy
+
+
