@@ -2,6 +2,7 @@ package com.finapp.account.controller;
 
 
 import com.finapp.account.constants.AccountsConstants;
+import com.finapp.account.dto.AccountsContactInfoDto;
 import com.finapp.account.dto.CustomerDto;
 import com.finapp.account.dto.ResponseDto;
 import com.finapp.account.service.impl.AccountsServiceImpl;
@@ -9,16 +10,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import com.finapp.account.service.IAccountsService;
 
 
 @RestController
@@ -37,6 +35,9 @@ public class AccountsController {
 
     @Autowired
     private Environment environment;
+
+    @Autowired
+    private AccountsContactInfoDto accountsContactInfoDto;
 
     @Operation(
             summary = "Create Account REST API",
@@ -120,7 +121,16 @@ public class AccountsController {
                 .body(environment.getProperty("JAVA_HOME"));
     }
 
-
+    @Operation(
+            summary = "Get Contact Info",
+            description = "Contact Info details that can be reached out in case of any issues"
+    )
+    @GetMapping("/api/contact-info")
+    public ResponseEntity<AccountsContactInfoDto> getContactInfo() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(accountsContactInfoDto);
+    }
 
 
 }
